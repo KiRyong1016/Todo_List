@@ -15,6 +15,10 @@ public interface EventDAO {
 	
 	public abstract List<EventVO> selectEventsByDateRange(int userId, LocalDate startDate, LocalDate endDate);
 	
+	public abstract List<EventVO> selectEventsByUserIdPaged(int userId, int offset, int limit, String orderBy, boolean asc);
+	
+	public abstract int countEventsByUserId(int userId);
+	
 	public abstract int updateEvent(EventVO event);
 
 	public abstract int deleteEvent(int eventId);

@@ -16,6 +16,10 @@ public interface TodoDAO {
     
     public abstract List<TodoVO> selectTodosByDueDateRange(int userId, LocalDate startDate, LocalDate endDate);
 
+    public abstract List<TodoVO> selectTodosByUserIdPaged(int userId, int offset, int limit, String orderBy, boolean asc, boolean onlyNotDone);
+    
+    public abstract int countTodosByUserId(int userId, boolean onlyNotDone);
+
     public abstract int updateTodo(TodoVO todo);
 
     public abstract int deleteTodo(int todoId);

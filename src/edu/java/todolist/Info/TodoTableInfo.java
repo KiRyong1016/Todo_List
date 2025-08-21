@@ -26,6 +26,8 @@ public interface TodoTableInfo {
 	// 날짜 범위로 일정 조회
 	public static final String SQL_SELECT_BY_DATE_RANGE = "SELECT * FROM todo WHERE user_id = ? AND due_date >= ? AND due_date <= ?";
 
+	public static final String SQL_COUNT_TODO_NOTDONE = "SELECT COUNT(*) FROM todo WHERE user_id = ? AND status <> '완료'";
+	
 	// todo 수정
 	public static final String SQL_UPDATE = "UPDATE todo SET title = ?, description = ?, due_date = ?, priority = ?, status = ?, category = ? WHERE todo_id = ?";
 

@@ -201,7 +201,42 @@ public class EventDAOImple implements EventDAO, EventTableInfo, MySQLConnInfo {
 
 	    return result;
 	}
+	
+	@Override
+	public List<EventVO> selectEventsByUserIdPaged(int userId, int offset, int limit, String orderBy, boolean asc) {
+	    // 안전한 컬럼 화이트리스트
+	    String column = switch (orderBy) {
+	        case "start"  -> "start_date";
+	        case "title"  -> "title";
+	        case "repeat" -> "repeat_type";
+	        default       -> "start_date";
+	    };
+	    String dir = asc ? "ASC" : "DESC";
+	    String sql = "SELECT * FROM event WHERE user_id = ? ORDER BY " + column + " " + dir + " LIMIT ? OFFSET ?";
 
+	    List<EventVO> list = new ArrayList<>();
+	    try (Connection c = DriverManager.getConnection(URL, USER, PASSWORD);
+	         PreparedStatement ps = c.prepareStatement(sql)) {
+	        ps.setInt(1, userId);
+	        ps.setInt(2, limit);
+	        ps.setInt(3, offset);
+	        try (ResultSet rs = ps.executeQuery()) {
+	            while (rs.next()) list.add(extractEventFromResultSet(rs));
+	        }
+	    } catch (Exception e) { e.printStackTrace(); }
+	    return list;
+	}
+
+	@Override
+	public int countEventsByUserId(int userId) {
+	    try (Connection c = DriverManager.getConnection(URL, USER, PASSWORD);
+	         PreparedStatement ps = c.prepareStatement(SQL_COUNT_BY_USER)) {
+	        ps.setInt(1, userId);
+	        try (ResultSet rs = ps.executeQuery()) {
+	            return rs.next() ? rs.getInt(1) : 0;
+	        }
+	    } catch (Exception e) { e.printStackTrace(); return 0; }
+	}
 
 	@Override
 	public int updateEvent(EventVO event) {
@@ -383,5 +418,4 @@ public class EventDAOImple implements EventDAO, EventTableInfo, MySQLConnInfo {
 	    v.setEndDate(end);
 	    return v;
 	}
-
 }

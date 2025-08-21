@@ -181,7 +181,46 @@ public class TodoDAOImple implements TodoDAO, TodoTableInfo, MySQLConnInfo{
 
         return list;
     }
+    
+    @Override
+    public int countTodosByUserId(int userId, boolean onlyNotDone) {
+        String sql = onlyNotDone ? SQL_COUNT_TODO_NOTDONE : SQL_SELECT;
+        try (Connection c = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (Exception e) { e.printStackTrace(); return 0; }
+    }
 
+    @Override
+    public List<TodoVO> selectTodosByUserIdPaged(int userId, int offset, int limit,
+                                                 String orderBy, boolean asc, boolean onlyNotDone) {
+        String column = switch (orderBy) {
+            case "due"      -> "due_date";
+            case "priority" -> "priority";
+            case "status"   -> "status";
+            case "title"    -> "title";
+            default         -> "due_date";
+        };
+        String dir = asc ? "ASC" : "DESC";
+        String base = "FROM todo WHERE user_id = ?" + (onlyNotDone ? " AND status <> '완료'" : "");
+        String sql = "SELECT * " + base + " ORDER BY " + column + " " + dir + " LIMIT ? OFFSET ?";
+
+        List<TodoVO> list = new ArrayList<>();
+        try (Connection c = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.setInt(2, limit);
+            ps.setInt(3, offset);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(extractTodoFromResultSet(rs));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+    
     @Override
     public int updateTodo(TodoVO todo) {
         int result = 0;

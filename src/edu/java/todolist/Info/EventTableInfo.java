@@ -28,6 +28,7 @@ public interface EventTableInfo {
 	// 날짜 범위로 일정 조회
 	public static final String SQL_SELECT_BY_DATE_RANGE = "SELECT * FROM event WHERE user_id = ? AND start_date <= ? AND COALESCE(end_date, start_date) >= ? ORDER BY start_date";
 	
+	public static final String SQL_COUNT_BY_USER = "SELECT COUNT(*) FROM event WHERE user_id = ?";
 	// 일정 수정
 	public static final String SQL_UPDATE = "UPDATE event SET title = ?, description = ?, start_date = ?, end_date = ?, repeat_type = ? WHERE event_id = ?";
 	
