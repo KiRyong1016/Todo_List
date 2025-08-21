@@ -23,7 +23,7 @@ public interface EventTableInfo {
 	public static final String SQL_SELECT_BY_DATE = "SELECT * FROM event WHERE user_id = ? AND DATE(start_date) = ? ORDER BY start_date";
 	
 	// 반복 일정 조회
-	public static final String SQL_SELECT_REPEATING_MASTERS = "SELECT * FROM event WHERE user_id = ? AND repeat_type IS NOT NULL AND start_date <= ? AND (repeat_until IS NULL OR repeat_until >= ?) ORDER BY start_date";
+	public static final String SQL_SELECT_REPEATING_MASTERS = "SELECT * FROM event WHERE user_id = ? AND repeat_type IS NOT NULL AND start_date <= ? ORDER BY start_date";
 	
 	// 날짜 범위로 일정 조회
 	public static final String SQL_SELECT_BY_DATE_RANGE = "SELECT * FROM event WHERE user_id = ? AND start_date <= ? AND COALESCE(end_date, start_date) >= ? ORDER BY start_date";

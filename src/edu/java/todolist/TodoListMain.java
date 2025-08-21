@@ -85,10 +85,22 @@ public class TodoListMain extends JFrame {
         scheduleTableModel = new DefaultTableModel(new String[] {"시작 시간", "종료 시간", "스케줄"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
-        for (EventVO s : EventDao.selectEventsByDate(userId, today)) {
+     // 오늘 하루 경계(포함)
+        var dayStart = today.atStartOfDay();
+        var dayEnd   = today.plusDays(1).atStartOfDay().minusSeconds(1);
+
+        // 반복 전개 포함(DAO에서 on-the-fly 전개)
+        for (EventVO s : EventDao.selectEventsByDateRange(userId, today, today)) {
+            var st = s.getStartDate();
+            var et = (s.getEndDate() != null) ? s.getEndDate() : s.getStartDate();
+
+            // 화면 표시는 "당일 경계"로 잘라서 보여주기(전날~내일跨 일정 가독성)
+            var dispStart = st.isBefore(dayStart) ? dayStart : st;
+            var dispEnd   = et.isAfter(dayEnd)    ? dayEnd   : et;
+
             scheduleTableModel.addRow(new Object[] {
-                s.getStartDate().format(timeFormatterHM),
-                s.getEndDate().format(timeFormatterHM),
+                dispStart.format(timeFormatterHM),
+                dispEnd.format(timeFormatterHM),
                 s.getTitle()
             });
         }
@@ -226,13 +238,22 @@ public class TodoListMain extends JFrame {
 
         // 일정 새로고침
         scheduleTableModel.setRowCount(0);
-        for (EventVO s : EventDao.selectEventsByDate(loggedInUser.getUserId(), today)) {
-            scheduleTableModel.addRow(new Object[] {
-                s.getStartDate().format(timeFormatterHM),
-                s.getEndDate().format(timeFormatterHM),
+        var dayStart = today.atStartOfDay();
+        var dayEnd   = today.plusDays(1).atStartOfDay().minusSeconds(1);
+
+        for (EventVO s : EventDao.selectEventsByDateRange(loggedInUser.getUserId(), today, today)) {
+            var st = s.getStartDate();
+            var et = (s.getEndDate() != null) ? s.getEndDate() : s.getStartDate();
+            var dispStart = st.isBefore(dayStart) ? dayStart : st;
+            var dispEnd   = et.isAfter(dayEnd)    ? dayEnd   : et;
+
+            scheduleTableModel.addRow(new Object[]{
+                dispStart.format(timeFormatterHM),
+                dispEnd.format(timeFormatterHM),
                 s.getTitle()
             });
         }
+
 
         // To-Do 새로고침(컬럼 5개/순서 일치)
         todoTableModel.setRowCount(0);

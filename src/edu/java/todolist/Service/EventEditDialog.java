@@ -75,7 +75,7 @@ public class EventEditDialog extends JDialog {
         inputPanel.add(endDateField);
 
         inputPanel.add(new JLabel("반복 유형:"));
-        repeatTypeCombo = new JComboBox<>(new String[]{"없음", "매일", "매주", "매월"});
+        repeatTypeCombo = new JComboBox<>(new String[]{"없음", "매일", "매주", "매월", "매년"});
         repeatTypeCombo.setSelectedItem(this.event.getRepeatType() != null ? this.event.getRepeatType() : "없음");
         inputPanel.add(repeatTypeCombo);
 
