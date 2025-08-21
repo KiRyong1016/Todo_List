@@ -40,7 +40,10 @@ public class EventEditDialog extends JDialog {
             this.event = event;
             this.isNew = false;
         }
-
+        initUI();
+    }
+    
+    private void initUI() {
         setTitle(isNew ? "일정 추가" : "일정 수정");
         setSize(400, 350);
         setLocationRelativeTo(null);

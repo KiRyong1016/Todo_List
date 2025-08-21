@@ -16,6 +16,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import edu.java.todolist.DAO.TodoDAO;
 import edu.java.todolist.DAOImple.TodoDAOImple;
 import edu.java.todolist.VO.TodoVO;
 
@@ -23,6 +24,8 @@ public class TodoEditDialog extends JDialog {
     private TodoVO todo;
     private boolean isNew;
     private int todoId;
+    private final TodoDAO todoDAO = TodoDAOImple.getInstance();
+    
     private JTextField titleField;
     private JTextField descriptionField;
     private JTextField dueDateField;  // yyyy-MM-dd HH:mm 형식으로 수정
@@ -46,7 +49,10 @@ public class TodoEditDialog extends JDialog {
         setSize(400, 400);
         setLocationRelativeTo(null);
         setModal(true);
-
+        initUI();
+    }
+    
+    private void initUI() {
         JPanel inputPanel = new JPanel(new GridLayout(6, 2, 10, 10));
         Font font = new Font("맑은 고딕", Font.PLAIN, 14);
 

@@ -7,6 +7,7 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.labels.StandardCategoryToolTipGenerator;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.DatasetRenderingOrder;
 import org.jfree.chart.renderer.category.BarRenderer;
@@ -14,14 +15,35 @@ import org.jfree.chart.renderer.category.LineAndShapeRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GraphicsEnvironment;
+import java.awt.GridLayout;
+import java.awt.RenderingHints;
+
+import java.text.DecimalFormat;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JTextField;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+
+import java.util.LinkedHashMap;
+import java.util.HashSet;
 
 /**
  * 통계 패널
@@ -163,7 +185,7 @@ public class StatsPanel extends JPanel {
                 GroupAgg g = e.getValue();
                 barDs.addValue(g.total, "예정건", key);
                 barDs.addValue(g.done,  "완료건", key);
-                double ratePct = g.total == 0 ? 0.0 : (g.done * 100.0 / g.total);
+                double ratePct = g.total == 0 ? 0.0 : (g.done * 100.0 / (double)g.total);
                 lineDs.addValue(ratePct, "완료율(%)", key);
             }
             JFreeChart chart = ChartFactory.createBarChart(
@@ -178,7 +200,7 @@ public class StatsPanel extends JPanel {
                 GroupAgg g = e.getValue();
                 barDs.addValue(g.total, "예정건", key);
                 barDs.addValue(g.done,  "완료건", key);
-                double ratePct = g.total == 0 ? 0.0 : (g.done * 100.0 / g.total);
+                double ratePct = g.total == 0 ? 0.0 : (g.done * 100.0 / (double)g.total);
                 lineDs.addValue(ratePct, "완료율(%)", key);
             }
             JFreeChart chart = ChartFactory.createBarChart(
@@ -191,13 +213,18 @@ public class StatsPanel extends JPanel {
     private void applyComboPlotStyling(JFreeChart chart, DefaultCategoryDataset lineDs) {
         CategoryPlot plot = (CategoryPlot) chart.getPlot();
         plot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
-        
+
         NumberAxis countAxis = (NumberAxis) plot.getRangeAxis();
         countAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
-        
+
         // 오른쪽(%) 축 추가
         NumberAxis percentAxis = new NumberAxis("완료율(%)");
         percentAxis.setAutoRangeIncludesZero(true);
+
+        // ✅ 과학적 표기(5E-9 등) 방지: 고정 포맷 + 범위(0~100) 권장
+        percentAxis.setNumberFormatOverride(new DecimalFormat("0.0")); // tick: 0.0 형식
+        percentAxis.setRange(0.0, 100.0);
+
         plot.setRangeAxis(1, percentAxis);
 
         // 라인 렌더러/데이터셋
@@ -205,6 +232,11 @@ public class StatsPanel extends JPanel {
         plot.setDataset(1, lineDs);
         plot.setRenderer(1, lineRenderer);
         plot.mapDatasetToRangeAxis(1, 1); // lineDs -> percentAxis
+
+        // ✅ 툴팁도 고정 포맷(0.0%)으로
+        lineRenderer.setDefaultToolTipGenerator(
+            new StandardCategoryToolTipGenerator("{1}: {2}%", new DecimalFormat("0.0"))
+        );
 
         // 막대 간격
         BarRenderer barRenderer = (BarRenderer) plot.getRenderer(0);

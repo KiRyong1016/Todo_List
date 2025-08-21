@@ -21,6 +21,7 @@ import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 
+import edu.java.todolist.DAO.TodoDAO;
 import edu.java.todolist.DAOImple.TodoDAOImple;
 import edu.java.todolist.VO.TodoVO;
 
@@ -32,7 +33,8 @@ public class TodoPanel extends JPanel {
     private JComboBox<String> filterCombo;
     private List<TodoVO> todos = new ArrayList<TodoVO>();
     private final String[] COLUMN_NAMES = {"기한", "내용", "중요도", "상태", "카테고리"};
-
+    private final TodoDAO todoDAO = TodoDAOImple.getInstance();
+    
     public TodoPanel(int userId) {
         this.userId = userId;        
         setLayout(new BorderLayout());
@@ -123,25 +125,25 @@ public class TodoPanel extends JPanel {
     }
 
     void loadTodos() {
-        todos = TodoDAOImple.getInstance().selectAllTodosByUserId(userId);
+        todos = todoDAO.selectAllTodosByUserId(userId);
         updateTable(todos);
         System.out.println(todos.size());
     }
 
     private void loadTodosSortedByPriority() {
-        todos = TodoDAOImple.getInstance().selectAllTodosByUserId(userId);
+        todos = todoDAO.selectAllTodosByUserId(userId);
         todos.sort(Comparator.comparing(TodoVO::getPriority));
         updateTable(todos);
     }
 
     private void loadTodosSortedByStatus() {
-        todos = TodoDAOImple.getInstance().selectAllTodosByUserId(userId);
+        todos = todoDAO.selectAllTodosByUserId(userId);
         todos.sort(Comparator.comparing(TodoVO::getStatus));
         updateTable(todos);
     }
 
     private void loadTodosSortedByCategory() {
-        todos = TodoDAOImple.getInstance().selectAllTodosByUserId(userId);
+        todos = todoDAO.selectAllTodosByUserId(userId);
         todos.sort(Comparator.comparing(TodoVO::getCategory, Comparator.nullsLast(String::compareTo)));
         updateTable(todos);
     }

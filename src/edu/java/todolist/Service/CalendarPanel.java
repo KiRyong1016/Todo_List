@@ -51,9 +51,24 @@ public class CalendarPanel extends JPanel {
 
         List<EventVO> events = eventDAO.selectEventsByDateRange(userId, queryStart, queryEnd);
 
-        eventDates = events.stream()
-                .map(e -> e.getStartDate().toLocalDate())
-                .collect(Collectors.toSet());
+     // 멀티데이 일정 범위 전체를 하이라이트 대상으로 수집
+        Set<LocalDate> dates = new HashSet<>();
+        for (EventVO e : events) {
+            if (e.getStartDate() == null) continue; // 안전 가드
+            LocalDate s = e.getStartDate().toLocalDate();
+            LocalDate t = (e.getEndDate() != null) ? e.getEndDate().toLocalDate() : s; // end가 null이면 단일일정
+
+            // 혹시 end < start인 잘못된 데이터 방어
+            if (t.isBefore(s)) {
+                LocalDate tmp = s; s = t; t = tmp;
+            }
+
+            for (LocalDate d = s; !d.isAfter(t); d = d.plusDays(1)) {
+                dates.add(d);
+            }
+        }
+        eventDates = dates;
+
 
         highlightEventDates();
         System.out.println("loadEventsAndHighlight 호출: 이벤트 날짜 수 = " + eventDates.size());
@@ -130,7 +145,7 @@ public class CalendarPanel extends JPanel {
 
     private void showEventsForDate(LocalDate date) {
         // DB에서 해당 날짜 이벤트 가져오기
-        List<EventVO> events = eventDAO.selectEventsByDate(userId, date);
+        List<EventVO> events = eventDAO.selectEventsByDateRange(userId, date, date);
 
         // 새 JFrame 또는 JDialog 생성
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),

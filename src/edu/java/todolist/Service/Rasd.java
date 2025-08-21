@@ -1,26 +1,16 @@
 package edu.java.todolist.Service;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.GridLayout;
-
-import javax.swing.BorderFactory;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JButton;
+import javax.swing.*;
+import java.awt.*;
 
 import edu.java.todolist.DAOImple.UserDAOImple;
 import edu.java.todolist.VO.UserVO;
 
-public class ChangePasswordDialog extends JDialog {
+public class Rasd extends JDialog {
     private UserVO user;
     private boolean updated = false;
 
-    public ChangePasswordDialog(JFrame parent, UserVO user) {
+    public Rasd(JFrame parent, UserVO user) {
         super(parent, "비밀번호 변경", true);
         this.user = user;
         setPreferredSize(new Dimension(400, 300));

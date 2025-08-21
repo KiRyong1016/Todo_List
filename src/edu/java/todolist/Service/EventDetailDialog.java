@@ -13,15 +13,16 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
+import edu.java.todolist.DAO.EventDAO;
 import edu.java.todolist.DAOImple.EventDAOImple;
-import edu.java.todolist.DAOImple.TodoDAOImple;
 import edu.java.todolist.VO.EventVO;
 
 public class EventDetailDialog extends JDialog {
 	private EventPanel parent;
     private EventVO event;
-	private int eventId;
-    private int userId;
+	private final int eventId;
+    private final int userId;
+    private final EventDAO eventDAO = EventDAOImple.getInstance();
     
     private JLabel titleLabel;
     private JLabel descriptionLabel;
@@ -33,13 +34,16 @@ public class EventDetailDialog extends JDialog {
         this.parent = parent;
         this.eventId = eventId;
         this.userId = userId;
-        this.event = EventDAOImple.getInstance().selectAllTodoByEventId(eventId);
+        this.event = eventDAO.selectAllTodoByEventId(eventId);
 
         setTitle("일정 상세 보기");
         setSize(400, 300);
         setLocationRelativeTo(null);
         setModal(true);
-
+        initUI();
+    }
+    
+    private void initUI() {
         JPanel contentPanel = new JPanel(new GridLayout(6, 1, 5, 5));
         titleLabel = new JLabel("제목: " + (event.getTitle() != null ? event.getTitle() : ""));
         descriptionLabel = new JLabel("설명: " + (event.getDescription() != null ? event.getDescription() : ""));
@@ -47,7 +51,7 @@ public class EventDetailDialog extends JDialog {
         endDateLabel = new JLabel("종료: " + (event.getEndDate() != null ? event.getEndDate() : ""));
         repeatTypeLabel = new JLabel("반복: " + (event.getRepeatType() != null ? event.getRepeatType() : ""));
 
-        Font font = new Font("맑은 고딕", Font.PLAIN, 14);
+        Font font = new Font("맑은 고딕", Font.PLAIN, 16);
         titleLabel.setFont(font);
         descriptionLabel.setFont(font);
         startDateLabel.setFont(font);
@@ -80,7 +84,7 @@ public class EventDetailDialog extends JDialog {
 
                 // 수정 다이얼로그가 닫힌 후에 (모달이라면 아래 코드가 실행됨)
                 // 수정이 완료됐으면 상세 다이얼로그도 갱신 또는 닫기
-                EventVO updatedTodo = EventDAOImple.getInstance().selectAllTodoByEventId(event.getEventId());
+                EventVO updatedTodo = eventDAO.selectAllTodoByEventId(event.getEventId());
                 if (updatedTodo != null) {
                     event = updatedTodo;
                     dispose();
@@ -102,7 +106,7 @@ public class EventDetailDialog extends JDialog {
                     JOptionPane.YES_NO_OPTION);
 
                 if (confirm == JOptionPane.YES_OPTION) {
-                    int result = EventDAOImple.getInstance().deleteEvent(event.getEventId());
+                    int result = eventDAO.deleteEvent(event.getEventId());
                     if (result == 1) {
                         JOptionPane.showMessageDialog(EventDetailDialog.this, "삭제 완료!");
                         dispose(); // 다이얼로그 닫기

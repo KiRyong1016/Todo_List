@@ -1,17 +1,24 @@
 package edu.java.todolist.Service;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 
-import edu.java.todolist.TodoListMain;
-import edu.java.todolist.DAO.UserDAO;
-import edu.java.todolist.DAOImple.UserDAOImple;
-import edu.java.todolist.VO.UserVO;
-
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
+
+import edu.java.todolist.DAO.UserDAO;
+import edu.java.todolist.DAOImple.UserDAOImple;
+import edu.java.todolist.TodoListMain;
+import edu.java.todolist.VO.UserVO;
 
 public class Login extends JFrame {
 
@@ -21,17 +28,16 @@ public class Login extends JFrame {
     private JButton signupButton;
 
     public Login() {
-        initialize();
-    }
-
-    private void initialize() {
-        setTitle("로그인");
+    	setTitle("로그인");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 280);
         setLocationRelativeTo(null);
         getContentPane().setLayout(null);
         getContentPane().setBackground(new Color(245, 245, 245));
+        initialize();
+    }
 
+    private void initialize() {     
         Font titleFont = new Font("맑은 고딕", Font.BOLD, 28);
         Font labelFont = new Font("맑은 고딕", Font.PLAIN, 16);
         Font btnFont = new Font("맑은 고딕", Font.BOLD, 16);

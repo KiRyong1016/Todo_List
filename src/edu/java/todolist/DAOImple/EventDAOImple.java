@@ -141,29 +141,36 @@ public class EventDAOImple implements EventDAO, EventTableInfo, MySQLConnInfo {
 
 	@Override
 	public List<EventVO> selectEventsByDateRange(int userId, LocalDate startDate, LocalDate endDate) {
-		List<EventVO> list = new ArrayList<>();
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		try {
-			Class.forName("com.mysql.cj.jdbc.Driver");
-			conn = DriverManager.getConnection(URL, USER, PASSWORD);
-			pstmt = conn.prepareStatement(SQL_SELECT_BY_DATE_RANGE);
-			pstmt.setInt(1, userId);
-			pstmt.setDate(2, java.sql.Date.valueOf(startDate));
-			pstmt.setDate(3, java.sql.Date.valueOf(endDate));
-			rs = pstmt.executeQuery();
+	    List<EventVO> list = new ArrayList<>();
+	    Connection conn = null;
+	    PreparedStatement pstmt = null;
+	    ResultSet rs = null;
 
-			while (rs.next()) {
-				list.add(extractEventFromResultSet(rs));
-			}
-		} catch (SQLException | ClassNotFoundException e) {
-			e.printStackTrace();
-		} finally {
-			DBConnManager.close(conn, pstmt, rs);
-		}
-		return list;
+	    try {
+	        Class.forName("com.mysql.cj.jdbc.Driver");
+
+	        java.time.LocalDateTime rangeStart = startDate.atStartOfDay();
+	        java.time.LocalDateTime rangeEnd   = endDate.plusDays(1).atStartOfDay().minusSeconds(1);
+
+	        conn = DriverManager.getConnection(URL, USER, PASSWORD);
+	        pstmt = conn.prepareStatement(SQL_SELECT_BY_DATE_RANGE);
+
+	        pstmt.setInt(1, userId);
+	        pstmt.setTimestamp(2, java.sql.Timestamp.valueOf(rangeEnd));   // start_date <= ?
+	        pstmt.setTimestamp(3, java.sql.Timestamp.valueOf(rangeStart)); // COALESCE(end_date, start_date) >= ?
+
+	        rs = pstmt.executeQuery();
+	        while (rs.next()) {
+	            list.add(extractEventFromResultSet(rs));
+	        }
+	    } catch (SQLException | ClassNotFoundException e) {
+	        e.printStackTrace();
+	    } finally {
+	        DBConnManager.close(conn, pstmt, rs);
+	    }
+	    return list;
 	}
+
 
 	@Override
 	public int updateEvent(EventVO event) {

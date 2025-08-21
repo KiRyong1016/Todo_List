@@ -21,9 +21,9 @@ import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 
+import edu.java.todolist.DAO.EventDAO;
 import edu.java.todolist.DAOImple.EventDAOImple;
 import edu.java.todolist.VO.EventVO;
-import edu.java.todolist.Service.EventDetailDialog;
 
 public class EventPanel extends JPanel {
     private JTable eventTable;
@@ -33,6 +33,7 @@ public class EventPanel extends JPanel {
     private JComboBox<String> filterCombo;
     private List<EventVO> events = new ArrayList<>();
     private final String[] COLUMN_NAMES = {"시작일시", "종료일시", "내용", "반복", "설명"};
+    private final EventDAO eventDAO = EventDAOImple.getInstance();
     
     public EventPanel(int userId) {
         this.userId = userId;
@@ -121,7 +122,7 @@ public class EventPanel extends JPanel {
     }
 
     void loadEvents() {
-        events = EventDAOImple.getInstance().selectEventsByUserId(userId);
+        events = eventDAO.selectEventsByUserId(userId);
         updateTable(events);
         for (EventVO event : events) {
             EventReminder.scheduleReminder(event);
@@ -130,7 +131,7 @@ public class EventPanel extends JPanel {
     }
 
     private void loadEventsSortedByStart() {
-        events = EventDAOImple.getInstance().selectEventsByUserId(userId);
+        events = eventDAO.selectEventsByUserId(userId);
         events.sort(Comparator.comparing(EventVO::getStartDate));
         updateTable(events);
         for (EventVO event : events) {
@@ -140,7 +141,7 @@ public class EventPanel extends JPanel {
     }
 
     private void loadEventsSortedByTitle() {
-        events = EventDAOImple.getInstance().selectEventsByUserId(userId);
+        events = eventDAO.selectEventsByUserId(userId);
         events.sort(Comparator.comparing(EventVO::getTitle, String.CASE_INSENSITIVE_ORDER));
         updateTable(events);
         for (EventVO event : events) {
@@ -150,7 +151,7 @@ public class EventPanel extends JPanel {
     }
 
     private void loadEventsSortedByRepeat() {
-        events = EventDAOImple.getInstance().selectEventsByUserId(userId);
+        events = eventDAO.selectEventsByUserId(userId);
         events.sort(Comparator.comparing(EventVO::getRepeatType, Comparator.nullsLast(String::compareTo)));
         updateTable(events);
         for (EventVO event : events) {

@@ -8,7 +8,7 @@ public interface TodoTableInfo {
 	public static final String COL_DESCRIPTION = "description";
 	public static final String COL_PRIORITY = "priority";
 	public static final String COL_STATUS = "status";
-	public static final String COL_CAATEGORY = "category";
+	public static final String COL_CATEGORY = "category";
 	public static final String COL_USER_ID = "user_id";
 
 	// todo 추가
