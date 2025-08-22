@@ -39,7 +39,7 @@ public class TodoPanel extends JPanel {
     // 테이블/모델
     private JTable todoTable;
     private DefaultTableModel tableModel;
-    private final String[] COLUMN_NAMES = {"제목", "기한", "중요도", "상태", "카테고리"};
+    private final String[] COLUMN_NAMES = {"기한", "할일", "상세", "카테고리", "중요도", "상태"};
 
     // 정렬 콤보
     private JComboBox<String> sortCombo;
@@ -82,7 +82,7 @@ public class TodoPanel extends JPanel {
         };
         sortCombo = new JComboBox<>(sortOptions);
         JPanel sortPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
-        sortPanel.add(new JLabel("정렬:"));
+        sortPanel.add(new JLabel("정렬 / 필터:"));
         sortPanel.add(sortCombo);
         add(sortPanel, BorderLayout.BEFORE_FIRST_LINE);
 
@@ -220,11 +220,12 @@ public class TodoPanel extends JPanel {
         for (TodoVO t : list) {
             String dueStr = (t.getDueDate() == null) ? "기한 없음" : t.getDueDate().format(DATE_FMT);
             Object[] row = {
-                safe(t.getTitle()),
-                dueStr,
+                safe(dueStr),
+                t.getTitle(),
+                t.getDescription() == null ? "" : t.getDescription(),
+                t.getCategory() == null ? "" : t.getCategory(),		
                 t.getPriority() == null ? "" : t.getPriority().toString(),
-                t.getStatus()   == null ? "" : t.getStatus().toString(),
-                t.getCategory() == null ? "" : t.getCategory()
+                t.getStatus()   == null ? "" : t.getStatus().toString()                
             };
             tableModel.addRow(row);
         }

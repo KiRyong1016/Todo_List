@@ -3,14 +3,18 @@ package edu.java.todolist.Service;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextPane;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import edu.java.todolist.DAO.TodoDAO;
 import edu.java.todolist.DAOImple.TodoDAOImple;
@@ -25,27 +29,41 @@ public class TodoDetailDialog extends JDialog {
     private final int userId;
 
     private TodoVO todo;
-    private final JLabel detailLabel = new JLabel();
+
+    // 중앙 표시부를 JTextPane(HTML)로 변경
+    private final JTextPane detailPane = new JTextPane();
+    private final DateTimeFormatter YMDHM = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public TodoDetailDialog(TodoPanel parent, int todoId, int userId) {
-        // 부모 윈도우 기준 모달
         super(SwingUtilities.getWindowAncestor(parent) instanceof java.awt.Frame
                 ? (java.awt.Frame) SwingUtilities.getWindowAncestor(parent) : null,
-              "할 일 상세 내용", true);
+                "할 일 상세 내용", true);
 
         this.parent = parent;
         this.todoId = todoId;
         this.userId = userId;
 
-        setSize(400, 300);
+        setSize(420, 340);
         setLocationRelativeTo(parent);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setResizable(true);
 
-        // ===== 내용 영역 =====
+        // ===== 내용 영역 (스크롤 가능) =====
         JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
-        detailLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
-        detailLabel.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
-        contentPanel.add(detailLabel, BorderLayout.CENTER);
+        detailPane.setContentType("text/html");
+        detailPane.setEditable(false);
+        // HTML에도 폰트 적용
+        detailPane.putClientProperty(javax.swing.JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+        detailPane.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+        detailPane.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+
+        JScrollPane scroll = new JScrollPane(
+                detailPane,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+        );
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        contentPanel.add(scroll, BorderLayout.CENTER);
 
         // ===== 버튼 영역 =====
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -65,7 +83,7 @@ public class TodoDetailDialog extends JDialog {
         deleteButton.addActionListener(e -> onDelete());
     }
 
-    /** DB에서 다시 읽고 라벨 갱신 */
+    /** DB에서 다시 읽고 상세 HTML 갱신 */
     private void reload() {
         try {
             todo = todoDAO.selectAllTodoByTodoId(todoId);
@@ -74,13 +92,13 @@ public class TodoDetailDialog extends JDialog {
                 dispose();
                 return;
             }
-            // 권한 가드
             if (todo.getUserId() != userId) {
                 JOptionPane.showMessageDialog(this, "권한이 없습니다.", "오류", JOptionPane.ERROR_MESSAGE);
                 dispose();
                 return;
             }
-            updateDetailLabel();
+            detailPane.setText(buildDetailHtml(todo));
+            detailPane.setCaretPosition(0); // 스크롤 맨 위로
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "데이터를 불러오는 중 오류가 발생했습니다.", "오류", JOptionPane.ERROR_MESSAGE);
@@ -88,34 +106,55 @@ public class TodoDetailDialog extends JDialog {
         }
     }
 
-    /** 현재 todo로 상세 HTML 갱신 */
-    private void updateDetailLabel() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body style='font-family:맑은 고딕; font-size:12pt;'>");
-        sb.append("<b>제목:</b> ").append(safe(todo.getTitle())).append("<br><br>");
-        sb.append("<b>내용:</b> ").append(safe(todo.getDescription())).append("<br><br>");
-        sb.append("<b>마감기한:</b> ")
-          .append(todo.getDueDate() != null ? todo.getDueDate().toString() : "없음")
-          .append("<br><br>");
-        sb.append("<b>중요도:</b> ").append(todo.getPriority() != null ? todo.getPriority() : "없음").append("<br><br>");
-        sb.append("<b>상태:</b> ").append(todo.getStatus() != null ? todo.getStatus() : "없음").append("<br><br>");
-        sb.append("<b>카테고리:</b> ").append(todo.getCategory() != null ? todo.getCategory() : "없음").append("<br><br>");
-        sb.append("</body></html>");
-        detailLabel.setText(sb.toString());
+    /** HTML 상세 문자열 구성 (긴 내용 줄바꿈/래핑 포함) */
+    private String buildDetailHtml(TodoVO t) {
+        String due = (t.getDueDate() != null) ? formatDateTime(t.getDueDate()) : "없음";
+        String title = safe(t.getTitle());
+        String desc  = safe(t.getDescription());
+        String cat   = (t.getCategory() != null) ? t.getCategory() : "없음";
+        String prio  = (t.getPriority() != null) ? t.getPriority().toString() : "없음";
+        String stat  = (t.getStatus()   != null) ? t.getStatus().toString()   : "없음";
+
+        // 긴 단어/문장도 줄바꿈되도록 CSS 적용
+        return """
+            <html>
+            <body style="font-family: '맑은 고딕', Malgun Gothic, sans-serif; font-size: 13pt; line-height: 1.5;
+                         overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; white-space: normal;">
+              <div style="margin-bottom:8px;"><b>기한:</b> %s</div>
+              <div style="margin-bottom:8px;"><b>할일:</b> %s</div>
+              <div style="margin-bottom:8px;"><b>상세:</b><br>%s</div>
+              <div style="margin-bottom:8px;"><b>카테고리:</b> %s</div>
+              <div style="margin-bottom:8px;"><b>중요도:</b> %s</div>
+              <div style="margin-bottom:8px;"><b>상태:</b> %s</div>
+            </body>
+            </html>
+        """.formatted(
+                escape(due),
+                escape(title),
+                nl2br(escape(desc)),
+                escape(cat),
+                escape(prio),
+                escape(stat)
+        );
+    }
+
+    private String formatDateTime(LocalDateTime ldt) {
+        return ldt.format(YMDHM);
     }
 
     /** 수정 버튼 핸들러 */
     private void onEdit() {
         try {
-            // 네 프로젝트 시그니처 유지
+            // 기존 시그니처 유지
             TodoEditDialog editDialog = new TodoEditDialog(todo, userId);
             editDialog.setVisible(true);
 
-            // 저장 후 재조회→라벨만 갱신(다이얼로그 재오픈 제거)
+            // 저장 후 재조회 → 상세만 갱신
             TodoVO updated = todoDAO.selectAllTodoByTodoId(todoId);
             if (updated != null) {
                 this.todo = updated;
-                updateDetailLabel();
+                detailPane.setText(buildDetailHtml(todo));
+                detailPane.setCaretPosition(0);
                 if (parent != null) parent.loadTodos();
             } else {
                 JOptionPane.showMessageDialog(this, "업데이트 후 데이터를 불러올 수 없습니다.", "오류", JOptionPane.ERROR_MESSAGE);
@@ -147,7 +186,14 @@ public class TodoDetailDialog extends JDialog {
         }
     }
 
+    // 유틸
     private static String safe(String s) {
         return (s == null || s.isEmpty()) ? "없음" : s;
+    }
+    private static String escape(String s) {
+        return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;");
+    }
+    private static String nl2br(String s) {
+        return s.replace("\r\n","<br>").replace("\n","<br>");
     }
 }

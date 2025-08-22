@@ -52,7 +52,7 @@ public class EventPanel extends JPanel {
     private JComboBox<Integer> pageSizeCombo;
 
     private List<EventVO> events = new ArrayList<>();
-    private static final String[] COLUMN_NAMES = {"시작일시", "종료일시", "내용", "반복", "설명"};
+    private static final String[] COLUMN_NAMES = {"시작일시", "종료일시", "스케쥴", "상세", "반복"};
 
     public EventPanel(int userId) {
         this.userId = userId;
@@ -94,7 +94,7 @@ public class EventPanel extends JPanel {
 
         addButton = new JButton("추가");
         addButton.addActionListener(e -> {
-            EventEditDialog dialog = new EventEditDialog(null, userId);
+            EventEditDialog dialog = new EventEditDialog((java.awt.Frame) null, userId);
             dialog.setVisible(true);
             loadEventsPaged(); // 저장 후 현재 페이지 갱신
         });
@@ -211,8 +211,8 @@ public class EventPanel extends JPanel {
                 e.getStartDate(),
                 e.getEndDate(),
                 e.getTitle(),
-                e.getRepeatType(),
-                e.getDescription()
+                e.getDescription(),
+                e.getRepeatType()                
             };
             tableModel.addRow(row);
         }

@@ -1,173 +1,311 @@
 package edu.java.todolist.Service;
 
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
+import com.toedter.calendar.JDateChooser;
+import edu.java.todolist.DAOImple.TodoDAOImple;
+import edu.java.todolist.VO.TodoVO;
+import edu.java.todolist.VO.TodoVO.Priority;
+import edu.java.todolist.VO.TodoVO.Status;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import edu.java.todolist.DAO.TodoDAO;
-import edu.java.todolist.DAOImple.TodoDAOImple;
-import edu.java.todolist.VO.TodoVO;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerDateModel;
 
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Objects;
+
+/**
+ * To-Do 추가/수정 다이얼로그
+ * - 기한: JDateChooser(달력) + JSpinner(시간 HH:mm)
+ * - "기한 없음" 체크 시 dueDate = null
+ * - Priority/Status는 VO의 enum을 직접 사용 (타입 안정)
+ * - 생성/수정 겸용: model(todo)가 null이면 추가 모드
+ */
 public class TodoEditDialog extends JDialog {
-    private TodoVO todo;
-    private boolean isNew;
-    private int todoId;
-    private final TodoDAO todoDAO = TodoDAOImple.getInstance();
-    
+    private static final long serialVersionUID = 1L;
+
+    private final int userId;
+    private TodoVO model; // null이면 추가 모드
+
+    // UI
     private JTextField titleField;
-    private JTextField descriptionField;
-    private JTextField dueDateField;  // yyyy-MM-dd HH:mm 형식으로 수정
-    private JComboBox<TodoVO.Priority> priorityCombo;
-    private JComboBox<TodoVO.Status> statusCombo;
+    private JTextArea  descArea;
     private JTextField categoryField;
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private JDateChooser dueDateChooser;
+    private JSpinner     dueTimeSpinner;
+    private JCheckBox    noDueCheck;
 
-    public TodoEditDialog(TodoVO todo, int userId) {   	
-        if (todo == null) {
-            this.todo = new TodoVO();  
-            this.isNew = true;
-            this.todo.setUserId(userId);  // 여기 userId를 파라미터로 받아서 설정
-        } else {
-            this.todo = todo;
-            this.isNew = false;
-        }    
+    private JComboBox<Priority> priorityCombo;
+    private JComboBox<Status>   statusCombo;
 
-        setTitle(isNew ? "할 일 추가" : "할 일 수정");
-        setSize(400, 400);
-        setLocationRelativeTo(null);
-        setModal(true);
+    // ===== 생성자 =====
+    /** 편의 생성자: 추가 모드 (owner는 null 가능) */
+    public TodoEditDialog(Frame owner, int userId) {
+        this(owner, userId, null);
+    }
+
+    /** 편의 생성자: 기존 코드 호환 (new TodoEditDialog(todo, userId)) */
+    public TodoEditDialog(TodoVO todo, int userId) {
+        this((Frame) null, userId, todo);
+    }
+
+    /** 메인 생성자: 추가/수정 겸용 */
+    public TodoEditDialog(Frame owner, int userId, TodoVO todo) {
+        super(owner, (todo == null || todo.getTodoId() == 0) ? "할 일 추가" : "할 일 수정", true);
+        this.userId = userId;
+        this.model  = todo;
         initUI();
-    }
-    
-    private void initUI() {
-        JPanel inputPanel = new JPanel(new GridLayout(6, 2, 10, 10));
-        Font font = new Font("맑은 고딕", Font.PLAIN, 14);
-
-        inputPanel.add(new JLabel("제목:"));
-        titleField = new JTextField(this.todo.getTitle() != null ? this.todo.getTitle() : "");
-        titleField.setFont(font);
-        inputPanel.add(titleField);
-
-        inputPanel.add(new JLabel("내용:"));
-        descriptionField = new JTextField(this.todo.getDescription() != null ? this.todo.getDescription() : "");
-        descriptionField.setFont(font);
-        inputPanel.add(descriptionField);
-
-        inputPanel.add(new JLabel("마감기한 (yyyy-MM-dd HH:mm):"));
-        String dueDateStr = this.todo.getDueDate() != null ? this.todo.getDueDate().format(DATE_TIME_FORMATTER) : "";
-        dueDateField = new JTextField(dueDateStr);
-        dueDateField.setFont(font);
-        inputPanel.add(dueDateField);
-
-        inputPanel.add(new JLabel("중요도:"));
-        priorityCombo = new JComboBox<>(TodoVO.Priority.values());
-        priorityCombo.setSelectedItem(this.todo.getPriority() != null ? this.todo.getPriority() : TodoVO.Priority.중);  // 기본값 설정 가능
-        inputPanel.add(priorityCombo);
-
-        inputPanel.add(new JLabel("상태:"));
-        statusCombo = new JComboBox<>(TodoVO.Status.values());
-        statusCombo.setSelectedItem(this.todo.getStatus() != null ? this.todo.getStatus() : TodoVO.Status.진행중);  // 기본값 설정 가능
-        inputPanel.add(statusCombo);
-
-        inputPanel.add(new JLabel("카테고리:"));
-        categoryField = new JTextField(this.todo.getCategory() != null ? this.todo.getCategory() : "");
-        categoryField.setFont(font);
-        inputPanel.add(categoryField);
-
-        add(inputPanel, BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton saveButton = new JButton("저장");
-        JButton cancelButton = new JButton("취소");
-
-        buttonPanel.add(saveButton);
-        buttonPanel.add(cancelButton);
-        add(buttonPanel, BorderLayout.SOUTH);
-
-        saveButton.addActionListener(e -> {
-            if (saveTodo()) {
-                dispose();
-            }
-        });
-
-        cancelButton.addActionListener(e -> {
-            dispose();
-        });
-    }
-
-    private boolean saveTodo() {
-        String title = titleField.getText().trim();
-        String description = descriptionField.getText().trim();
-        String dueDateStr = dueDateField.getText().trim();
-        TodoVO.Priority priority = (TodoVO.Priority) priorityCombo.getSelectedItem();
-        TodoVO.Status status = (TodoVO.Status) statusCombo.getSelectedItem();
-        String category = categoryField.getText().trim();
-
-        if (description.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "내용을 입력하세요.", "입력 오류", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-
-        LocalDateTime dueDate = null;
-        if (!dueDateStr.isEmpty()) {
-            try {
-                dueDate = LocalDateTime.parse(dueDateStr, DATE_TIME_FORMATTER);
-            } catch (DateTimeParseException e) {
-                JOptionPane.showMessageDialog(this, "마감기한은 yyyy-MM-dd HH:mm 형식이어야 합니다.", "입력 오류", JOptionPane.ERROR_MESSAGE);
-                return false;
-            }
-        }
-        
-        if (status == TodoVO.Status.완료 && dueDate != null && dueDate.isAfter(LocalDateTime.now())) {
-            JOptionPane.showMessageDialog(
-                this,
-                "마감기한이 현재 시각 이후인데 상태를 '완료'로 저장할 수 없습니다.\n" +
-                "마감기한을 조정하거나 상태를 '진행중/보류'로 변경해주세요.",
-                "입력 오류",
-                JOptionPane.ERROR_MESSAGE
-            );
-            return false;
-        }
-
-        todo.setTitle(title);
-        todo.setDescription(description);
-        todo.setDueDate(dueDate);
-        todo.setPriority(priority);
-        todo.setStatus(status);
-        todo.setCategory(category.isEmpty() ? null : category);
-
-        int result;
-        if (isNew) {
-            result = TodoDAOImple.getInstance().insertTodo(todo);
-            if (result == 1) {
-                JOptionPane.showMessageDialog(this, "추가 완료!", "성공", JOptionPane.INFORMATION_MESSAGE);
-                return true;
-            } else {
-                JOptionPane.showMessageDialog(this, "추가 실패.", "오류", JOptionPane.ERROR_MESSAGE);
-                return false;
-            }
+        if (model != null && model.getTodoId() != 0) {
+            loadModel(model);
         } else {
-            result = TodoDAOImple.getInstance().updateTodo(todo);
-            if (result == 1) {
-                JOptionPane.showMessageDialog(this, "수정 완료!", "성공", JOptionPane.INFORMATION_MESSAGE);
-                return true;
-            } else {
-                JOptionPane.showMessageDialog(this, "수정 실패.", "오류", JOptionPane.ERROR_MESSAGE);
-                return false;
-            }
+            setDefaults();
         }
+        pack();
+        setLocationRelativeTo(owner);
+    }
+
+    // ===== UI 구성 =====
+    private void initUI() {
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
+
+        JLabel header = new JLabel(getTitle());
+        header.setFont(new Font("맑은 고딕", Font.BOLD, 20));
+        header.setBorder(BorderFactory.createEmptyBorder(12, 16, 8, 16));
+        add(header, BorderLayout.NORTH);
+
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBorder(BorderFactory.createEmptyBorder(4, 16, 8, 16));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.insets = new Insets(6, 4, 6, 8);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // 제목
+        form.add(new JLabel("제목:"), gbc);
+        titleField = new JTextField(28);
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.weightx = 1.0;
+        form.add(titleField, gbc);
+
+        // 카테고리
+        gbc.gridx = 0; gbc.gridy++; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+        form.add(new JLabel("카테고리:"), gbc);
+        categoryField = new JTextField(20);
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.weightx = 1.0;
+        form.add(categoryField, gbc);
+
+        // 기한 (달력 + 시간 + "기한 없음")
+        gbc.gridx = 0; gbc.gridy++; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+        form.add(new JLabel("기한:"), gbc);
+
+        JPanel duePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        dueDateChooser = new JDateChooser();
+        dueDateChooser.setDateFormatString("yyyy-MM-dd");
+        dueDateChooser.setPreferredSize(new java.awt.Dimension(130, 24));
+
+        dueTimeSpinner = new JSpinner(new SpinnerDateModel(new Date(), null, null, Calendar.MINUTE));
+        JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(dueTimeSpinner, "HH:mm");
+        dueTimeSpinner.setEditor(timeEditor);
+
+        noDueCheck = new JCheckBox("기한 없음");
+        noDueCheck.addActionListener(e -> {
+            boolean enabled = !noDueCheck.isSelected();
+            dueDateChooser.setEnabled(enabled);
+            dueTimeSpinner.setEnabled(enabled);
+        });
+
+        duePanel.add(dueDateChooser);
+        duePanel.add(dueTimeSpinner);
+        duePanel.add(noDueCheck);
+
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.weightx = 1.0;
+        form.add(duePanel, gbc);
+
+        // 중요도
+        gbc.gridx = 0; gbc.gridy++; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+        form.add(new JLabel("중요도:"), gbc);
+        priorityCombo = new JComboBox<>(Priority.values());
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.weightx = 1.0;
+        form.add(priorityCombo, gbc);
+
+        // 상태
+        gbc.gridx = 0; gbc.gridy++; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+        form.add(new JLabel("상태:"), gbc);
+        statusCombo = new JComboBox<>(Status.values());
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.weightx = 1.0;
+        form.add(statusCombo, gbc);
+
+        // 내용
+        gbc.gridx = 0; gbc.gridy++; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+        form.add(new JLabel("내용:"), gbc);
+        descArea = new JTextArea(5, 28);
+        descArea.setLineWrap(true);
+        descArea.setWrapStyleWord(true);
+        JScrollPane descScroll = new JScrollPane(descArea);
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.BOTH; gbc.weightx = 1.0; gbc.weighty = 1.0;
+        form.add(descScroll, gbc);
+
+        add(form, BorderLayout.CENTER);
+
+        // 버튼
+        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        JButton saveBtn = new JButton("저장");
+        JButton cancelBtn = new JButton("취소");
+        btns.add(saveBtn);
+        btns.add(cancelBtn);
+        add(btns, BorderLayout.SOUTH);
+
+        getRootPane().setDefaultButton(saveBtn);
+
+        saveBtn.addActionListener(e -> onSave());
+        cancelBtn.addActionListener(e -> dispose());
+    }
+
+    private void setDefaults() {
+        // 신규 기본값
+        LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
+        // 오늘 18:00 같은 선호가 있으면 여기서 조정 가능
+        setDueDateTime(now.plusHours(1)); // 기본: 1시간 뒤
+        noDueCheck.setSelected(false);
+
+        // 기본 중요도/상태 (있으면)
+        if (priorityCombo.getItemCount() > 0) {
+            priorityCombo.setSelectedIndex(0);
+        }
+        if (statusCombo.getItemCount() > 0) {
+            statusCombo.setSelectedItem(Status.진행중); // 프로젝트 enum에 맞게 조정
+        }
+    }
+
+    private void loadModel(TodoVO vo) {
+        titleField.setText(safe(vo.getTitle()));
+        descArea.setText(safe(vo.getDescription()));
+        categoryField.setText(safe(vo.getCategory()));
+
+        if (vo.getDueDate() == null) {
+            noDueCheck.setSelected(true);
+            dueDateChooser.setEnabled(false);
+            dueTimeSpinner.setEnabled(false);
+            // 일단 화면상 값은 현재로
+            setDueDateTime(LocalDateTime.now().withSecond(0).withNano(0));
+        } else {
+            noDueCheck.setSelected(false);
+            dueDateChooser.setEnabled(true);
+            dueTimeSpinner.setEnabled(true);
+            setDueDateTime(vo.getDueDate());
+        }
+
+        if (vo.getPriority() != null) priorityCombo.setSelectedItem(vo.getPriority());
+        if (vo.getStatus()   != null) statusCombo.setSelectedItem(vo.getStatus());
+    }
+
+    // ===== 동작 =====
+    private void onSave() {
+        try {
+            String title = titleField.getText().trim();
+            if (title.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "제목을 입력하세요.", "입력 오류", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            LocalDateTime due = null;
+            if (!noDueCheck.isSelected()) {
+                Date d = dueDateChooser.getDate();
+                if (d == null) {
+                    JOptionPane.showMessageDialog(this, "기한 날짜를 선택하세요.", "입력 오류", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                Date t = (Date) dueTimeSpinner.getValue();
+                due = combine(d, t);
+            }
+
+            boolean isNew = (model == null || model.getTodoId() == 0);
+            if (isNew) model = (model == null ? new TodoVO() : model);
+
+            // 모델 반영
+            model.setUserId(userId);
+            model.setTitle(title);
+            model.setDescription(emptyToNull(descArea.getText().trim()));
+            model.setCategory(emptyToNull(categoryField.getText().trim()));
+            model.setDueDate(due);
+            model.setPriority((Priority) priorityCombo.getSelectedItem());
+            model.setStatus((Status) statusCombo.getSelectedItem());
+
+            int result = isNew
+                    ? TodoDAOImple.getInstance().insertTodo(model)
+                    : TodoDAOImple.getInstance().updateTodo(model);
+
+            if (result == 1) {
+                JOptionPane.showMessageDialog(this, "저장되었습니다.");
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "저장에 실패했습니다.", "오류", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "저장 처리 중 오류가 발생했습니다.", "오류", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // ===== 헬퍼 =====
+    private void setDueDateTime(LocalDateTime ldt) {
+        ZoneId zone = ZoneId.systemDefault();
+
+        // 날짜: 00:00 기준으로 Date 생성
+        Date dateVal = Date.from(ldt.toLocalDate().atStartOfDay(zone).toInstant());
+        dueDateChooser.setDate(dateVal);
+
+        // 시간: 오늘 날짜에 시간만 맞춰서 Date 생성
+        LocalTime t = ldt.toLocalTime();
+        LocalDate today = LocalDate.now();
+        Date timeVal = Date.from(LocalDateTime.of(today, t).atZone(zone).toInstant());
+        dueTimeSpinner.setValue(timeVal);
+    }
+
+    private static LocalDateTime combine(Date datePart, Date timePart) {
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDate d = Instant.ofEpochMilli(datePart.getTime()).atZone(zone).toLocalDate();
+        LocalTime t = (timePart == null)
+                ? LocalTime.of(0, 0)
+                : Instant.ofEpochMilli(timePart.getTime()).atZone(zone).toLocalTime().withSecond(0).withNano(0);
+        return LocalDateTime.of(d, t);
+    }
+
+    private static String safe(String s) { return (s == null) ? "" : s; }
+    private static String emptyToNull(String s) { return (s == null || s.isBlank()) ? null : s; }
+
+    // 선택적으로, 다이얼로그를 여는 정적 팩토리도 제공 가능
+    public static TodoEditDialog openForAdd(Frame owner, int userId) {
+        return new TodoEditDialog(owner, userId, null);
+    }
+    public static TodoEditDialog openForEdit(Frame owner, int userId, TodoVO vo) {
+        Objects.requireNonNull(vo, "todo must not be null");
+        return new TodoEditDialog(owner, userId, vo);
     }
 }
